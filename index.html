@@ -12,10 +12,36 @@
                    user-scalable=no,
                    shrink-to-fit=yes">
 
-    <title>Unity Web Player | Flappy Bird</title>
+    <title>Flappy Bird | Reach Score 20 For The Clue</title>
+    <meta name="description" content="Play Flappy Bird. Reach score 20 to automatically finish the game and reveal the secret clue!">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        /* Remove browser default spacing */
+        :root {
+            --primary: #f59e0b;
+            --primary-glow: rgba(245, 158, 11, 0.45);
+            --secondary: #10b981;
+            --secondary-glow: rgba(16, 185, 129, 0.4);
+            --bg-dark: #0a0d1a;
+            --card-bg: rgba(15, 23, 42, 0.88);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --gold: #fbbf24;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
         html,
         body {
             margin: 0;
@@ -23,53 +49,490 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background: #000000;
+            background: var(--bg-dark);
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
         }
 
-        /* Center the Unity game */
+        /* Unity WebGL Container */
         #unity-container {
             width: 100vw;
             height: 100vh;
-
             display: flex;
             justify-content: center;
             align-items: center;
+            background: radial-gradient(circle at center, #151d36 0%, #080a14 100%);
+            overflow: hidden;
+            position: relative;
+        }
 
+        #unity-canvas {
+            display: block;
+            width: 100vw;
+            height: auto;
+            max-width: 100vw;
+            max-height: 100vh;
+            aspect-ratio: 1600 / 740;
             background: #000000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            z-index: 1;
+        }
+
+        /* Top HUD Bar */
+        .hud-bar {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            padding: 8px 20px;
+            border-radius: 9999px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            animation: slideDown 0.6s ease-out;
+            pointer-events: auto;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -24px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+
+        .hud-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #fef08a;
+            background: rgba(234, 179, 8, 0.15);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            border: 1px solid rgba(234, 179, 8, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .hud-score-tracker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .hud-score-num {
+            font-family: 'Fredoka', cursive, sans-serif;
+            font-size: 1.25rem;
+            color: #38bdf8;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .hud-target {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .hud-progress-wrap {
+            width: 100px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .hud-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #38bdf8, #10b981);
+            border-radius: 9999px;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+        }
+
+        .hud-help-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .hud-help-btn:hover {
+            color: #fff;
+            transform: scale(1.15);
+        }
+
+        /* Loading Overlay */
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #151c38 0%, #070913 100%);
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        #loading-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .loader-spinner {
+            width: 56px;
+            height: 56px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #38bdf8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #f8fafc;
+            margin-bottom: 8px;
+        }
+
+        .loader-sub {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Modal Overlay Base */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(5, 8, 20, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.35s ease, visibility 0.35s ease;
+            pointer-events: none;
+        }
+
+        .modal-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            padding: 36px 32px;
+            max-width: 520px;
+            width: 100%;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(56, 189, 248, 0.15);
+            text-align: center;
+            transform: scale(0.92) translateY(20px);
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
             overflow: hidden;
         }
 
-        /* Unity canvas */
-        #unity-canvas {
-            display: block;
-
-            width: 100vw;
-            height: auto;
-
-            max-width: 100vw;
-            max-height: 100vh;
-
-            /*
-             * Keep the original Unity aspect ratio:
-             * 1600 : 740
-             */
-            aspect-ratio: 1600 / 740;
-
-            background: #000000;
+        .modal-backdrop.active .modal-card {
+            transform: scale(1) translateY(0);
         }
 
-        /* Mobile */
-        @media (max-width: 768px) {
+        .modal-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            margin-bottom: 16px;
+        }
 
-            #unity-container {
-                width: 100vw;
-                height: 100vh;
+        .badge-instruction {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+        }
+
+        .badge-victory {
+            color: var(--gold);
+            background: rgba(251, 191, 36, 0.15);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% {
+                box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 25px rgba(251, 191, 36, 0.5);
+            }
+        }
+
+        .modal-title {
+            font-family: 'Fredoka', cursive, sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 12px;
+            line-height: 1.2;
+        }
+
+        .modal-desc {
+            font-size: 1.05rem;
+            color: #cbd5e1;
+            line-height: 1.55;
+            margin-bottom: 24px;
+        }
+
+        .highlight-goal {
+            display: block;
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            font-size: 1.25rem;
+            margin-top: 6px;
+        }
+
+        /* Controls info list */
+        .controls-list {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 26px;
+            flex-wrap: wrap;
+        }
+
+        .control-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            color: #e2e8f0;
+        }
+
+        /* Buttons */
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 24px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #ffffff;
+            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.5);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(245, 158, 11, 0.65);
+        }
+
+        .btn-victory {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.5);
+        }
+
+        .btn-victory:hover {
+            background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.65);
+        }
+
+        /* Clue Box in Victory Modal */
+        .clue-box-container {
+            margin: 20px 0 24px 0;
+            text-align: left;
+            background: rgba(10, 15, 30, 0.8);
+            border: 1px solid rgba(251, 191, 36, 0.35);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+        }
+
+        .clue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .clue-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .clue-badge {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .clue-textarea {
+            width: 100%;
+            height: 90px;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            color: #f8fafc;
+            font-family: 'Outfit', monospace;
+            font-size: 1rem;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .clue-textarea:focus {
+            border-color: var(--gold);
+        }
+
+        .clue-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .btn-copy {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: #e2e8f0;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-copy:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .btn-copy.copied {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+            color: #34d399;
+        }
+
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .hud-bar {
+                top: 10px;
+                padding: 6px 14px;
+                gap: 10px;
+                max-width: 95vw;
+            }
+
+            .hud-badge {
+                font-size: 0.72rem;
+                padding: 3px 8px;
+            }
+
+            .hud-score-tracker {
+                font-size: 0.85rem;
+            }
+
+            .hud-progress-wrap {
+                width: 60px;
+            }
+
+            .modal-card {
+                padding: 28px 20px;
+            }
+
+            .modal-title {
+                font-size: 1.6rem;
+            }
+
+            .modal-desc {
+                font-size: 0.95rem;
             }
 
             #unity-canvas {
                 width: 100vw;
                 height: auto;
-
                 max-width: 100vw;
                 max-height: 100vh;
             }
@@ -79,53 +542,441 @@
 
 <body>
 
+    <!-- Top In-Game Progress & Objective HUD -->
+    <header class="hud-bar" id="game-hud">
+        <div class="hud-badge">🎯 Mission</div>
+        <div class="hud-score-tracker">
+            <span>Score:</span>
+            <span class="hud-score-num" id="hud-score">0</span>
+            <span class="hud-target">/ 20</span>
+        </div>
+        <div class="hud-progress-wrap" title="Progress toward Score 20">
+            <div class="hud-progress-fill" id="hud-progress"></div>
+        </div>
+        <button class="hud-help-btn" id="hud-info-btn" title="View Instructions" aria-label="View Instructions">ℹ️</button>
+    </header>
+
+    <!-- Confetti Particle Canvas for Victory -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Unity WebGL Game Canvas Container -->
     <div id="unity-container">
-
-        <canvas
-            id="unity-canvas"
-            width="1600"
-            height="740"
-            tabindex="-1">
-        </canvas>
-
+        <canvas id="unity-canvas" width="1600" height="740" tabindex="-1"></canvas>
     </div>
 
+    <!-- Initial Game Loading Screen -->
+    <div id="loading-overlay">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Loading Flappy Bird...</div>
+        <div class="loader-sub">Preparing game engine and challenge</div>
+    </div>
+
+    <!-- Instruction Modal (Appears when player enters the game) -->
+    <div class="modal-backdrop active" id="instruction-modal">
+        <div class="modal-card">
+            <div class="modal-badge badge-instruction">🎮 Mission Objective</div>
+            <h1 class="modal-title">Flappy Bird Challenge</h1>
+            <p class="modal-desc">
+                Welcome, player!
+                <span class="highlight-goal">To get the next clue you have to reach score 20</span>
+            </p>
+
+            <div class="controls-list">
+                <div class="control-pill">💻 Space / Click to Flap</div>
+                <div class="control-pill">📱 Tap screen to Flap</div>
+                <div class="control-pill">🎯 Goal: 20 Pipes</div>
+            </div>
+
+            <button class="btn-action btn-primary" id="btn-start-game">
+                Got it, Let's Play! 🚀
+            </button>
+        </div>
+    </div>
+
+    <!-- Victory Screen Modal (Appears automatically when Score reaches 20) -->
+    <div class="modal-backdrop" id="victory-modal">
+        <div class="modal-card">
+            <div class="modal-badge badge-victory">🏆 Victory Reached</div>
+            <h2 class="modal-title">You Have Won the Game!</h2>
+            <p class="modal-desc">
+                Congratulations! You conquered the skies and reached score 20. Your next clue is unlocked below:
+            </p>
+
+            <!-- Text Box Present as Requested -->
+            <div class="clue-box-container">
+                <div class="clue-header">
+                    <label for="clue-textbox" class="clue-label">🔑 Secret Clue Box</label>
+                    <span class="clue-badge">Content to be added</span>
+                </div>
+                <!-- The content inside this text box will be added later -->
+                <textarea id="clue-textbox" class="clue-textarea" placeholder="[The content inside this text box will be added later]"></textarea>
+                <div class="clue-actions">
+                    <button class="btn-copy" id="btn-copy-clue">📋 Copy Clue</button>
+                </div>
+            </div>
+
+            <button class="btn-action btn-victory" id="btn-play-again">
+                🔄 Play Again
+            </button>
+        </div>
+    </div>
+
+    <!-- Unity Loader Script -->
     <script src="Build/GameBuilds.loader.js"></script>
 
     <script>
+        // ============================================================
+        // GAME CONFIGURATION & CLUE CONTENT
+        // ============================================================
+        // You can easily customize or add the secret clue content below:
+        const CLUE_CONTENT = ""; // <-- The content inside this text box can be set here or directly in the textarea
 
+        const TARGET_SCORE = 20;
+        let currentScore = 0;
+        let hasWon = false;
+        let unityInstance = null;
+        let wasmMemory = null;
+
+        const hudScore = document.getElementById("hud-score");
+        const hudProgress = document.getElementById("hud-progress");
+        const instructionModal = document.getElementById("instruction-modal");
+        const victoryModal = document.getElementById("victory-modal");
+        const clueTextbox = document.getElementById("clue-textbox");
+        const btnStartGame = document.getElementById("btn-start-game");
+        const btnPlayAgain = document.getElementById("btn-play-again");
+        const btnCopyClue = document.getElementById("btn-copy-clue");
+        const hudInfoBtn = document.getElementById("hud-info-btn");
+        const loadingOverlay = document.getElementById("loading-overlay");
+
+        // Set initial clue content if configured
+        if (CLUE_CONTENT && clueTextbox) {
+            clueTextbox.value = CLUE_CONTENT;
+        }
+
+        // ============================================================
+        // WEBASSEMBLY SCORE HOOK
+        // ============================================================
+        // In the game IL2CPP binary:
+        // GameManager.AddScore calls invoke_ii with index 2246 ("Score: " string literal)
+        // and argument a1 pointing directly to &this->score!
+        function hookWebAssembly() {
+            const origInstantiate = WebAssembly.instantiate;
+            WebAssembly.instantiate = function(bytesOrModule, importObject) {
+                if (importObject && importObject.env) {
+                    hookImports(importObject.env);
+                }
+                return origInstantiate.apply(this, arguments).then((result) => {
+                    const inst = result.instance || result;
+                    if (inst && inst.exports && inst.exports.memory) {
+                        wasmMemory = inst.exports.memory;
+                    }
+                    return result;
+                });
+            };
+
+            if (WebAssembly.instantiateStreaming) {
+                const origInstantiateStreaming = WebAssembly.instantiateStreaming;
+                WebAssembly.instantiateStreaming = function(response, importObject) {
+                    if (importObject && importObject.env) {
+                        hookImports(importObject.env);
+                    }
+                    return origInstantiateStreaming.apply(this, arguments).then((result) => {
+                        const inst = result.instance || result;
+                        if (inst && inst.exports && inst.exports.memory) {
+                            wasmMemory = inst.exports.memory;
+                        }
+                        return result;
+                    });
+                };
+            }
+        }
+
+        function hookImports(env) {
+            if (env.invoke_ii) {
+                const origInvokeII = env.invoke_ii;
+                env.invoke_ii = function(index, a1) {
+                    // String literal 2246 is "Score: " used inside GameManager.AddScore
+                    if (index === 2246) {
+                        try {
+                            if (wasmMemory) {
+                                const heap32 = new Int32Array(wasmMemory.buffer);
+                                const newScore = heap32[a1 >> 2];
+                                if (typeof newScore === "number" && !isNaN(newScore)) {
+                                    onScoreUpdated(newScore);
+                                }
+                            }
+                        } catch (e) {
+                            console.warn("WASM score read warning:", e);
+                        }
+                    }
+                    return origInvokeII.apply(this, arguments);
+                };
+            }
+        }
+
+        // Initialize WebAssembly hook before Unity loads
+        hookWebAssembly();
+
+        // ============================================================
+        // SCORE & WIN LOGIC
+        // ============================================================
+        function onScoreUpdated(score) {
+            if (score < 0 || score > 500) return; // sanity bounds
+            if (score > currentScore) {
+                currentScore = score;
+            }
+
+            // Update UI HUD
+            if (hudScore) hudScore.textContent = currentScore;
+            if (hudProgress) {
+                const pct = Math.min(100, Math.round((currentScore / TARGET_SCORE) * 100));
+                hudProgress.style.width = pct + "%";
+            }
+
+            // Check Win Condition: reached score 20
+            if (currentScore >= TARGET_SCORE && !hasWon) {
+                triggerGameWin();
+            }
+        }
+
+        function triggerGameWin() {
+            hasWon = true;
+            console.log("🏆 Victory triggered! Score reached:", currentScore);
+
+            // 1. Finish / Stop the game automatically
+            if (unityInstance) {
+                try {
+                    // Call GameOver on GameManger to stop bird & pipes
+                    unityInstance.SendMessage("GameManger", "GameOver");
+                } catch (e) {
+                    console.warn("SendMessage GameOver error:", e);
+                }
+            }
+
+            // 2. Play celebratory audio fanfare using Web Audio API
+            playVictoryFanfare();
+
+            // 3. Launch confetti animation
+            startConfetti();
+
+            // 4. Reveal Victory Screen with clue text box
+            if (victoryModal) {
+                victoryModal.classList.add("active");
+            }
+        }
+
+        // Secondary fallback scanner: Checks WASM memory periodically for "Score: 20"
+        function runMemoryScanner() {
+            if (hasWon) return;
+            if (unityInstance && unityInstance.Module && unityInstance.Module.HEAPU8) {
+                const heap = unityInstance.Module.HEAPU8;
+                // Fast search for "Score: 20" in UTF-16LE:
+                // 53 00 63 00 6f 00 72 00 65 00 3a 00 20 00 32 00 30 00
+                let idx = 0;
+                while (idx < heap.length - 18) {
+                    idx = heap.indexOf(0x53, idx);
+                    if (idx === -1 || idx > heap.length - 18) break;
+                    if (heap[idx + 1] === 0x00 &&
+                        heap[idx + 2] === 0x63 && heap[idx + 3] === 0x00 &&
+                        heap[idx + 4] === 0x6f && heap[idx + 5] === 0x00 &&
+                        heap[idx + 6] === 0x72 && heap[idx + 7] === 0x00 &&
+                        heap[idx + 8] === 0x65 && heap[idx + 9] === 0x00 &&
+                        heap[idx + 10] === 0x3a && heap[idx + 11] === 0x00 &&
+                        heap[idx + 12] === 0x20 && heap[idx + 13] === 0x00 &&
+                        heap[idx + 14] === 0x32 && heap[idx + 15] === 0x00 &&
+                        heap[idx + 16] === 0x30 && heap[idx + 17] === 0x00) {
+                        onScoreUpdated(20);
+                        return;
+                    }
+                    idx += 2;
+                }
+            }
+            setTimeout(runMemoryScanner, 250);
+        }
+
+        // ============================================================
+        // SOUND EFFECTS (Web Audio API Synthesizer)
+        // ============================================================
+        function playVictoryFanfare() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                if (ctx.state === "suspended") ctx.resume();
+
+                // Fanfare notes: C5, E5, G5, C6 (harmonic triumph arpeggio)
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                const now = ctx.currentTime;
+
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    osc.type = "triangle";
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+
+                    gain.gain.setValueAtTime(0, now + idx * 0.14);
+                    gain.gain.linearRampToValueAtTime(0.25, now + idx * 0.14 + 0.04);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.14 + (idx === notes.length - 1 ? 1.2 : 0.4));
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start(now + idx * 0.14);
+                    osc.stop(now + idx * 0.14 + (idx === notes.length - 1 ? 1.3 : 0.45));
+                });
+            } catch (e) {
+                // Audio autoplay policy fallback
+            }
+        }
+
+        // ============================================================
+        // CONFETTI PARTICLES
+        // ============================================================
+        const confettiCanvas = document.getElementById("confetti-canvas");
+        const confettiCtx = confettiCanvas.getContext("2d");
+        let confettiParticles = [];
+        let confettiAnimationId = null;
+
+        function resizeConfetti() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        window.addEventListener("resize", resizeConfetti);
+        resizeConfetti();
+
+        function startConfetti() {
+            confettiParticles = [];
+            const colors = ["#f59e0b", "#fbbf24", "#10b981", "#38bdf8", "#ec4899", "#8b5cf6", "#ffffff"];
+            for (let i = 0; i < 120; i++) {
+                confettiParticles.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: Math.random() * confettiCanvas.height * 0.3 - confettiCanvas.height * 0.3,
+                    r: Math.random() * 6 + 4,
+                    d: Math.random() * 40 + 10,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    tilt: Math.floor(Math.random() * 10) - 10,
+                    tiltAngleIncremental: Math.random() * 0.07 + 0.04,
+                    tiltAngle: 0
+                });
+            }
+            if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+            renderConfetti();
+        }
+
+        function renderConfetti() {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            let stillVisible = false;
+
+            for (let i = 0; i < confettiParticles.length; i++) {
+                const p = confettiParticles[i];
+                p.tiltAngle += p.tiltAngleIncremental;
+                p.y += (Math.cos(p.d) + 3 + p.r / 2) * 0.9;
+                p.tilt = Math.sin(p.tiltAngle) * 15;
+
+                if (p.y < confettiCanvas.height) stillVisible = true;
+
+                confettiCtx.beginPath();
+                confettiCtx.lineWidth = p.r / 2;
+                confettiCtx.strokeStyle = p.color;
+                confettiCtx.moveTo(p.x + p.tilt + p.r, p.y);
+                confettiCtx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r);
+                confettiCtx.stroke();
+            }
+
+            if (stillVisible) {
+                confettiAnimationId = requestAnimationFrame(renderConfetti);
+            }
+        }
+
+        // ============================================================
+        // MODAL & BUTTON HANDLERS
+        // ============================================================
+        // Start Game button in Instruction modal
+        btnStartGame.addEventListener("click", () => {
+            instructionModal.classList.remove("active");
+            const canvas = document.querySelector("#unity-canvas");
+            if (canvas) canvas.focus();
+        });
+
+        // Top info button to re-read instructions
+        hudInfoBtn.addEventListener("click", () => {
+            instructionModal.classList.add("active");
+        });
+
+        // Copy clue button
+        btnCopyClue.addEventListener("click", () => {
+            const textToCopy = clueTextbox.value.trim() || "[Clue content will be added later]";
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                btnCopyClue.textContent = "✅ Copied!";
+                btnCopyClue.classList.add("copied");
+                setTimeout(() => {
+                    btnCopyClue.textContent = "📋 Copy Clue";
+                    btnCopyClue.classList.remove("copied");
+                }, 2000);
+            });
+        });
+
+        // Play Again button
+        btnPlayAgain.addEventListener("click", () => {
+            victoryModal.classList.remove("active");
+            hasWon = false;
+            currentScore = 0;
+            if (hudScore) hudScore.textContent = "0";
+            if (hudProgress) hudProgress.style.width = "0%";
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+
+            if (unityInstance) {
+                try {
+                    unityInstance.SendMessage("GameManger", "RestartGame");
+                } catch (e) {
+                    console.warn("RestartGame error:", e);
+                }
+            }
+            const canvas = document.querySelector("#unity-canvas");
+            if (canvas) canvas.focus();
+        });
+
+        // Optional developer/tester shortcut to test win screen: window.testWinGame()
+        window.testWinGame = function() {
+            onScoreUpdated(20);
+        };
+
+        // ============================================================
+        // UNITY WEBGL INSTANTIATION
+        // ============================================================
         const canvas = document.querySelector("#unity-canvas");
 
         createUnityInstance(canvas, {
-
             arguments: [],
-
             dataUrl: "Build/GameBuilds.data.br",
-
             frameworkUrl: "Build/GameBuilds.framework.js.br",
-
             codeUrl: "Build/GameBuilds.wasm.br",
-
             streamingAssetsUrl: "StreamingAssets",
-
             companyName: "SA-Games",
-
             productName: "Flappy Bird",
-
             productVersion: "1.0"
-
-        }).then((unityInstance) => {
-
+        }).then((instance) => {
+            unityInstance = instance;
             console.log("Unity loaded successfully.");
+            if (loadingOverlay) loadingOverlay.classList.add("hidden");
 
+            // Start fallback memory scanner
+            setTimeout(runMemoryScanner, 1000);
         }).catch((message) => {
-
-            console.error(message);
-
-            alert(message);
-
+            console.error("Unity load error:", message);
+            if (loadingOverlay) {
+                loadingOverlay.innerHTML = `
+                    <div style="max-width: 450px; text-align: center; padding: 20px;">
+                        <h2 style="color: #ef4444; margin-bottom: 12px;">Failed to load game</h2>
+                        <p style="color: #cbd5e1; font-size: 0.95rem; margin-bottom: 16px;">${message}</p>
+                        <button onclick="location.reload()" style="background:#f59e0b; color:#fff; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600;">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
         });
-
     </script>
 
 </body>
