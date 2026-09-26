@@ -437,23 +437,27 @@
 
         .clue-textarea {
             width: 100%;
-            height: 90px;
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 12px;
+            height: 100px;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            border-radius: 12px;
+            padding: 14px 16px;
             color: #f8fafc;
-            font-family: 'Outfit', monospace;
-            font-size: 1rem;
-            resize: vertical;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 600;
+            line-height: 1.6;
+            text-align: center;
+            resize: none;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
             user-select: text;
             -webkit-user-select: text;
         }
 
         .clue-textarea:focus {
             border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
         }
 
         .clue-actions {
@@ -606,10 +610,9 @@
             <div class="clue-box-container">
                 <div class="clue-header">
                     <label for="clue-textbox" class="clue-label">🔑 Secret Clue Box</label>
-                    <span class="clue-badge">Content to be added</span>
+                    <span class="clue-badge" style="color: #34d399; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3);">Clue Unlocked</span>
                 </div>
-                <!-- The content inside this text box will be added later -->
-                <textarea id="clue-textbox" class="clue-textarea" placeholder="[The content inside this text box will be added later]"></textarea>
+                <textarea id="clue-textbox" class="clue-textarea" readonly placeholder="I am the public face of a private space&#10;&#10;6E">I am the public face of a private space&#10;&#10;6E</textarea>
                 <div class="clue-actions">
                     <button class="btn-copy" id="btn-copy-clue">📋 Copy Clue</button>
                 </div>
@@ -628,8 +631,7 @@
         // ============================================================
         // GAME CONFIGURATION & CLUE CONTENT
         // ============================================================
-        // You can easily customize or add the secret clue content below:
-        const CLUE_CONTENT = ""; // <-- The content inside this text box can be set here or directly in the textarea
+        const CLUE_CONTENT = "I am the public face of a private space\n\n6E";
 
         const TARGET_SCORE = 20;
         let currentScore = 0;
