@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+    <meta name="viewport"
+          content="width=device-width,
+                   height=device-height,
+                   initial-scale=1.0,
+                   user-scalable=no,
+                   shrink-to-fit=yes">
+
+    <title>Unity Web Player | Flappy Bird</title>
+
+    <style>
+        /* Remove browser default spacing */
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000000;
+        }
+
+        /* Center the Unity game */
+        #unity-container {
+            width: 100vw;
+            height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            background: #000000;
+            overflow: hidden;
+        }
+
+        /* Unity canvas */
+        #unity-canvas {
+            display: block;
+
+            width: 100vw;
+            height: auto;
+
+            max-width: 100vw;
+            max-height: 100vh;
+
+            /*
+             * Keep the original Unity aspect ratio:
+             * 1600 : 740
+             */
+            aspect-ratio: 1600 / 740;
+
+            background: #000000;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+
+            #unity-container {
+                width: 100vw;
+                height: 100vh;
+            }
+
+            #unity-canvas {
+                width: 100vw;
+                height: auto;
+
+                max-width: 100vw;
+                max-height: 100vh;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="unity-container">
+
+        <canvas
+            id="unity-canvas"
+            width="1600"
+            height="740"
+            tabindex="-1">
+        </canvas>
+
+    </div>
+
+    <script src="Build/GameBuilds.loader.js"></script>
+
+    <script>
+
+        const canvas = document.querySelector("#unity-canvas");
+
+        createUnityInstance(canvas, {
+
+            arguments: [],
+
+            dataUrl: "Build/GameBuilds.data.br",
+
+            frameworkUrl: "Build/GameBuilds.framework.js.br",
+
+            codeUrl: "Build/GameBuilds.wasm.br",
+
+            streamingAssetsUrl: "StreamingAssets",
+
+            companyName: "SA-Games",
+
+            productName: "Flappy Bird",
+
+            productVersion: "1.0"
+
+        }).then((unityInstance) => {
+
+            console.log("Unity loaded successfully.");
+
+        }).catch((message) => {
+
+            console.error(message);
+
+            alert(message);
+
+        });
+
+    </script>
+
+</body>
+
+</html>
